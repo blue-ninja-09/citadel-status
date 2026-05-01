@@ -379,3 +379,9 @@ body {
   .stat-val { font-size: 22px; }
   .section { margin-bottom: 32px; }
 }
+
+.chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 20px 16px 8px;
+}

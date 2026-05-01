@@ -367,3 +367,15 @@ body {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* Mobile nav */
+@media (max-width: 600px) {
+  .nav { padding-bottom: 32px; }
+  .last-updated { display: none; }
+  .nav-right { gap: 12px; }
+  .amp-row { padding: 16px; }
+  .amp-row-header { flex-wrap: wrap; gap: 8px; }
+  .stat-block { padding: 16px; }
+  .stat-val { font-size: 22px; }
+  .section { margin-bottom: 32px; }
+}

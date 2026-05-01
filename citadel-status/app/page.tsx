@@ -6,36 +6,10 @@ import { UserButton } from "@clerk/nextjs";
 const API = process.env.NEXT_PUBLIC_API_URL || "https://status-api.citadelservers.online";
 const REFRESH_MS = 10000;
 
-function getColor(pct: number) {
-  if (pct < 60) return "green";
-  if (pct < 85) return "yellow";
-  return "red";
-}
-
-function StatCard({ title, value, unit, label, pct }: {
-  title: string; value: string | number; unit?: string;
-  label?: string; pct?: number;
-}) {
-  const color = pct != null ? getColor(pct) : "green";
-  return (
-    <div className="card">
-      <div className="card-accent" />
-      <div className="card-header">
-        <div className="card-title">{title}</div>
-      </div>
-      <div className="stat-value">
-        {value}<span className="stat-unit">{unit}</span>
-      </div>
-      {label && <div className="stat-label">{label}</div>}
-      {pct != null && (
-        <div className="progress-wrap">
-          <div className="progress-bar">
-            <div className={`progress-fill ${color}`} style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
+function barClass(pct: number) {
+  if (pct < 60) return "ok";
+  if (pct < 85) return "warn";
+  return "danger";
 }
 
 export default function Dashboard() {
@@ -44,35 +18,30 @@ export default function Dashboard() {
   const [tunnels, setTunnels] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [allDown, setAllDown] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<string>("");
+  const [lastUpdate, setLastUpdate] = useState("");
 
   const fetchAll = useCallback(async () => {
-    try {
-      const [sRes, aRes, tRes] = await Promise.allSettled([
-        fetch(`${API}/stats`, { signal: AbortSignal.timeout(6000) }),
-        fetch(`${API}/amp`,   { signal: AbortSignal.timeout(6000) }),
-        fetch(`${API}/tunnels`, { signal: AbortSignal.timeout(8000) }),
-      ]);
+    const [sRes, aRes, tRes] = await Promise.allSettled([
+      fetch(`${API}/stats`,   { signal: AbortSignal.timeout(6000) }),
+      fetch(`${API}/amp`,     { signal: AbortSignal.timeout(6000) }),
+      fetch(`${API}/tunnels`, { signal: AbortSignal.timeout(8000) }),
+    ]);
 
-      const s = sRes.status === "fulfilled" && sRes.value.ok ? await sRes.value.json() : null;
-      const a = aRes.status === "fulfilled" && aRes.value.ok ? await aRes.value.json() : null;
-      const t = tRes.status === "fulfilled" && tRes.value.ok ? await tRes.value.json() : null;
+    const s = sRes.status === "fulfilled" && sRes.value.ok ? await sRes.value.json() : null;
+    const a = aRes.status === "fulfilled" && aRes.value.ok ? await aRes.value.json() : null;
+    const t = tRes.status === "fulfilled" && tRes.value.ok ? await tRes.value.json() : null;
 
-      if (!s && !a && !t) {
-        setAllDown(true);
-      } else {
-        setAllDown(false);
-        if (s) setStats(s);
-        if (a) setAmp(a);
-        if (t) setTunnels(t);
-      }
-
-      setLastUpdate(new Date().toLocaleTimeString());
-      setLoading(false);
-    } catch {
+    if (!s && !a && !t) {
       setAllDown(true);
-      setLoading(false);
+    } else {
+      setAllDown(false);
+      if (s) setStats(s);
+      if (a) setAmp(a);
+      if (t) setTunnels(t);
     }
+
+    setLastUpdate(new Date().toLocaleTimeString());
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -84,10 +53,8 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="loading">
-        <div className="loading-bar">
-          <span /><span /><span /><span />
-        </div>
-        CONNECTING TO CITADEL...
+        <div className="spinner" />
+        Connecting...
       </div>
     );
   }
@@ -96,188 +63,153 @@ export default function Dashboard() {
     return (
       <div className="app">
         <div className="all-down">
-          <div className="all-down-icon">⚠</div>
-          <div className="all-down-title">Everything is Down</div>
+          <div className="all-down-title">Everything is <span>Down</span></div>
           <div className="all-down-sub">
-            No systems are responding.<br />
-            Contact <strong style={{ color: "var(--accent)" }}>Caelum</strong> immediately.
+            No systems are responding. Contact{" "}
+            <strong style={{ color: "var(--text-bright)" }}>Caelum</strong> immediately.
           </div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-dim)" }}>
-            Last attempt: {lastUpdate || "—"}
-          </div>
+          {lastUpdate && (
+            <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+              Last checked at {lastUpdate}
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  const mem   = stats?.memory;
-  const cpu   = stats?.cpu;
-  const disk  = stats?.disk;
-  const gpu   = stats?.gpu?.[0];
+  const cpu  = stats?.cpu;
+  const mem  = stats?.memory;
+  const disk = stats?.disk;
+  const gpu  = stats?.gpu?.[0];
 
   return (
     <div className="app">
-      {/* Header */}
-      <div className="header">
-        <div className="header-left">
-          <div className="logo">CITADEL <span>STATUS</span></div>
+      {/* Nav */}
+      <nav className="nav">
+        <div className="logo">Citadel <span>Status</span></div>
+        <div className="nav-right">
           <div className="live-badge">
-            <div className="live-dot" />
-            LIVE
+            <div className="live-dot" /> Live
           </div>
-        </div>
-        <div className="header-right">
-          <div className="last-updated">UPDATED {lastUpdate}</div>
+          <div className="last-updated">{lastUpdate}</div>
           <UserButton />
         </div>
-      </div>
+      </nav>
 
-      {/* System Stats */}
-      <div className="section-label">System / Host Machine</div>
-      <div className="grid-4" style={{ marginBottom: 24 }}>
-        <StatCard
-          title="CPU Usage"
-          value={cpu?.percent ?? "—"}
-          unit="%"
-          label={cpu ? `${cpu.cores_physical}C / ${cpu.cores_logical}T · ${cpu.freq_mhz} MHz` : ""}
-          pct={cpu?.percent}
-        />
-        <StatCard
-          title="Memory"
-          value={mem?.used_gb ?? "—"}
-          unit=" GB"
-          label={mem ? `of ${mem.total_gb} GB total` : ""}
-          pct={mem?.percent}
-        />
-        <StatCard
-          title="Disk (C:)"
-          value={disk?.used_gb ?? "—"}
-          unit=" GB"
-          label={disk ? `of ${disk.total_gb} GB total` : ""}
-          pct={disk?.percent}
-        />
-        <StatCard
-          title="GPU"
-          value={gpu?.vram_total_mb ? `${Math.round(gpu.vram_total_mb / 1024)} GB` : "—"}
-          unit=""
-          label={gpu?.name ?? "Unknown"}
-        />
-      </div>
-
-      {/* Tunnels + AMP side by side */}
-      <div className="grid-2" style={{ marginBottom: 24 }}>
-        {/* Cloudflare Tunnels */}
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Cloudflare Tunnels</div>
-            {tunnels && (
-              <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-dim)" }}>
-                {tunnels.tunnels.filter((t: any) => t.up).length}/{tunnels.tunnels.length} UP
-              </div>
-            )}
+      {/* System */}
+      <div className="section">
+        <div className="section-title">System</div>
+        <div className="stat-grid">
+          {/* CPU */}
+          <div className="stat-block">
+            <div className="stat-name">CPU</div>
+            <div className="stat-val">{cpu?.percent ?? "—"}<span className="stat-unit">%</span></div>
+            <div className="stat-lbl">{cpu ? `${cpu.cores_physical}C · ${cpu.cores_logical}T · ${cpu.freq_mhz} MHz` : ""}</div>
+            {cpu && <div className="bar"><div className={`bar-fill ${barClass(cpu.percent)}`} style={{ width: `${cpu.percent}%` }} /></div>}
           </div>
+
+          {/* RAM */}
+          <div className="stat-block">
+            <div className="stat-name">Memory</div>
+            <div className="stat-val">{mem?.used_gb ?? "—"}<span className="stat-unit"> GB</span></div>
+            <div className="stat-lbl">{mem ? `of ${mem.total_gb} GB` : ""}</div>
+            {mem && <div className="bar"><div className={`bar-fill ${barClass(mem.percent)}`} style={{ width: `${mem.percent}%` }} /></div>}
+          </div>
+
+          {/* Disk */}
+          <div className="stat-block">
+            <div className="stat-name">Disk (C:)</div>
+            <div className="stat-val">{disk?.used_gb ?? "—"}<span className="stat-unit"> GB</span></div>
+            <div className="stat-lbl">{disk ? `of ${disk.total_gb} GB` : ""}</div>
+            {disk && <div className="bar"><div className={`bar-fill ${barClass(disk.percent)}`} style={{ width: `${disk.percent}%` }} /></div>}
+          </div>
+
+          {/* GPU */}
+          <div className="stat-block">
+            <div className="stat-name">GPU</div>
+            <div className="stat-val" style={{ fontSize: 16, paddingTop: 4 }}>{gpu?.name ?? "—"}</div>
+            <div className="stat-lbl" style={{ marginTop: 6 }}>{gpu?.shared ? "Shared memory" : gpu?.vram_total_mb ? `${Math.round(gpu.vram_total_mb / 1024)} GB VRAM` : ""}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tunnels */}
+      <div className="section">
+        <div className="section-title">
+          Cloudflare Tunnels
+          {tunnels && (
+            <span style={{ marginLeft: 10, color: "var(--text-dim)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
+              {tunnels.tunnels.filter((t: any) => t.up).length}/{tunnels.tunnels.length} online
+            </span>
+          )}
+        </div>
+        <div className="list">
           {tunnels ? tunnels.tunnels.map((t: any) => (
-            <div className="tunnel-row" key={t.url}>
+            <div className="list-row" key={t.url}>
               <div>
-                <div className="tunnel-name">{t.name}</div>
-                <div className="tunnel-url">{t.url}</div>
+                <div className="list-name">{t.name}</div>
+                <div className="list-sub">{t.url}</div>
               </div>
-              <div className={`status-pill ${t.up ? "up" : "down"}`}>
-                {t.up ? "UP" : "DOWN"}
-              </div>
+              <div className={`pill ${t.up ? "up" : "down"}`}>{t.up ? "Online" : "Down"}</div>
             </div>
           )) : (
-            <div style={{ fontFamily: "var(--mono)", color: "var(--text-dim)", fontSize: 12 }}>
-              Tunnel data unavailable
-            </div>
-          )}
-        </div>
-
-        {/* AMP Summary */}
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">AMP — Instance Overview</div>
-            {amp && (
-              <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-dim)" }}>
-                {amp.instances.filter((i: any) => i.running).length}/{amp.instances.length} RUNNING
-              </div>
-            )}
-          </div>
-          {amp ? amp.instances.map((inst: any) => (
-            <div className="tunnel-row" key={inst.id}>
-              <div>
-                <div className="tunnel-name">{inst.name}</div>
-                <div className="tunnel-url">{inst.module}</div>
-              </div>
-              <div className={`status-pill ${inst.running ? "up" : "down"}`}>
-                {inst.running ? "ONLINE" : "OFFLINE"}
-              </div>
-            </div>
-          )) : (
-            <div style={{ fontFamily: "var(--mono)", color: "var(--text-dim)", fontSize: 12 }}>
-              AMP data unavailable
-            </div>
+            <div className="list-row"><div className="list-sub">Unavailable</div></div>
           )}
         </div>
       </div>
 
-      {/* AMP Instance Detail Cards */}
-      {amp?.instances?.length > 0 && (
-        <>
-          <div className="section-label">AMP — Instance Details</div>
-          {amp.instances.map((inst: any) => (
-            <div className={`amp-card ${inst.running ? "running" : "stopped"}`} key={inst.id}>
-              <div className="amp-card-header">
-                <div>
+      {/* AMP */}
+      <div className="section">
+        <div className="section-title">
+          Game Servers
+          {amp && (
+            <span style={{ marginLeft: 10, color: "var(--text-dim)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
+              {amp.instances.filter((i: any) => i.running).length}/{amp.instances.length} running
+            </span>
+          )}
+        </div>
+        <div className="amp-list">
+          {amp?.instances?.length ? amp.instances.map((inst: any) => {
+            const memPct = inst.memory_max_mb ? Math.round(inst.memory_mb / inst.memory_max_mb * 100) : 0;
+            return (
+              <div className="amp-row" key={inst.id}>
+                <div className="amp-row-header">
                   <div className="amp-name">{inst.name}</div>
-                  <div className="amp-module">{inst.module}</div>
+                  <div className={`pill ${inst.running ? "up" : "down"}`}>
+                    {inst.running ? "Online" : "Offline"}
+                  </div>
                 </div>
-                <div className={`status-pill ${inst.running ? "up" : "down"}`}>
-                  {inst.running ? "ONLINE" : "OFFLINE"}
+                <div className="amp-metrics">
+                  <div>
+                    <div className="amp-metric-val">{inst.cpu_percent != null ? `${inst.cpu_percent}%` : "—"}</div>
+                    <div className="amp-metric-lbl">CPU</div>
+                  </div>
+                  <div>
+                    <div className="amp-metric-val">{inst.memory_mb != null ? `${inst.memory_mb} MB` : "—"}</div>
+                    <div className="amp-metric-lbl">Memory</div>
+                  </div>
+                  <div>
+                    <div className="amp-metric-val">{inst.tps != null ? `${inst.tps}/${inst.tps_max}` : "—"}</div>
+                    <div className="amp-metric-lbl">TPS</div>
+                  </div>
+                  <div>
+                    <div className="amp-metric-val">{inst.players != null ? `${inst.players}/${inst.max_players}` : "—"}</div>
+                    <div className="amp-metric-lbl">Players</div>
+                  </div>
                 </div>
+                {inst.running && inst.memory_max_mb && (
+                  <div className="bar">
+                    <div className={`bar-fill ${barClass(memPct)}`} style={{ width: `${Math.min(100, memPct)}%` }} />
+                  </div>
+                )}
               </div>
-              <div className="amp-metrics">
-                <div className="amp-metric">
-                  <div className="amp-metric-val">
-                    {inst.cpu_percent != null ? `${inst.cpu_percent}%` : "—"}
-                  </div>
-                  <div className="amp-metric-lbl">CPU</div>
-                </div>
-                <div className="amp-metric">
-                  <div className="amp-metric-val">
-                    {inst.memory_mb != null ? `${inst.memory_mb} MB` : "—"}
-                  </div>
-                  <div className="amp-metric-lbl">Memory</div>
-                </div>
-                <div className="amp-metric">
-                  <div className="amp-metric-val">
-                    {inst.tps != null ? `${inst.tps}/${inst.tps_max}` : "—"}
-                  </div>
-                  <div className="amp-metric-lbl">TPS</div>
-                </div>
-                <div className="amp-metric">
-                  <div className="amp-metric-val">
-                    {inst.players != null
-                      ? `${inst.players}/${inst.max_players}`
-                      : "—"}
-                  </div>
-                  <div className="amp-metric-lbl">Players</div>
-                </div>
-              </div>
-              {inst.running && inst.memory_mb != null && inst.memory_max_mb != null && (
-                <div className="progress-wrap" style={{ marginTop: 14 }}>
-                  <div className="progress-bar">
-                    <div
-                      className={`progress-fill ${getColor(Math.round(inst.memory_mb / inst.memory_max_mb * 100))}`}
-                      style={{ width: `${Math.min(100, Math.round(inst.memory_mb / inst.memory_max_mb * 100))}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </>
-      )}
+            );
+          }) : (
+            <div className="amp-row"><div style={{ color: "var(--text-dim)", fontSize: 13 }}>No instances available</div></div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

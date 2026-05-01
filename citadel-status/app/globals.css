@@ -302,3 +302,24 @@ body {
 @media (max-width: 500px) {
   .stat-grid { grid-template-columns: 1fr; }
 }
+
+/* Clerk overrides */
+.cl-userButtonPopoverCard,
+.cl-userButtonPopoverMain,
+.cl-userButtonPopoverFooter,
+.cl-popoverBox {
+  background: #111111 !important;
+  border: 1px solid #1f1f1f !important;
+  color: #f0ece8 !important;
+}
+
+.cl-userButtonPopoverActionButton,
+.cl-userPreviewMainIdentifier,
+.cl-userPreviewSecondaryIdentifier,
+.cl-menuItem {
+  color: #f0ece8 !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+  background: #1f1f1f !important;
+}

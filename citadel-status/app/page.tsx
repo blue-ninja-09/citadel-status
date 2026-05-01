@@ -176,8 +176,8 @@ export default function Dashboard() {
               <div className="amp-row" key={inst.id}>
                 <div className="amp-row-header">
                   <div className="amp-name">{inst.name}</div>
-                  <div className={`pill ${inst.running ? "up" : "down"}`}>
-                    {inst.running ? "Online" : "Offline"}
+                  <div className={`pill ${inst.running ? inst.app_state === 50 ? "sleeping" : "up" : "down"}`}>
+                    {inst.running ? inst.app_state === 50 ? "Sleeping" : "Online" : "Offline"}
                   </div>
                 </div>
                 <div className="amp-metrics">

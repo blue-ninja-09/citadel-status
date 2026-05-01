@@ -175,7 +175,18 @@ export default function Dashboard() {
             return (
               <div className="amp-row" key={inst.id}>
                 <div className="amp-row-header">
-                  <div className="amp-name">{inst.name}</div>
+                  <div>
+                    <div className="amp-name">{inst.name}</div>
+                    {inst.public_address && (
+                      <div
+                        className="amp-address"
+                        onClick={() => navigator.clipboard.writeText(inst.public_address)}
+                        title="Click to copy"
+                      >
+                        {inst.public_address} <span className="copy-icon">⎘</span>
+                      </div>
+                    )}
+                  </div>
                   <div className={`pill ${inst.running ? inst.app_state === 50 ? "sleeping" : "up" : "down"}`}>
                     {inst.running ? inst.app_state === 50 ? "Sleeping" : "Online" : "Offline"}
                   </div>

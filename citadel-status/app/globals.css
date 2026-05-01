@@ -323,3 +323,8 @@ body {
 .cl-userButtonPopoverActionButton:hover {
   background: #1f1f1f !important;
 }
+
+.pill.sleeping {
+  background: rgba(251,191,36,0.1);
+  color: #fbbf24;
+}

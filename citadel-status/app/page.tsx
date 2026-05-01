@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [stats, setStats]       = useState<any>(null);
   const [amp, setAmp]           = useState<any>(null);
   const [tunnels, setTunnels]   = useState<any>(null);
+  const [sql, setSql]           = useState<any>(null);
   const [loading, setLoading]   = useState(true);
   const [allDown, setAllDown]   = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
@@ -30,17 +31,19 @@ export default function Dashboard() {
   };
 
   const fetchAll = useCallback(async () => {
-    const [sRes, aRes, tRes] = await Promise.allSettled([
+    const [sRes, aRes, tRes, sqlRes] = await Promise.allSettled([
       fetch(`${API}/stats`,   { signal: AbortSignal.timeout(6000) }),
       fetch(`${API}/amp`,     { signal: AbortSignal.timeout(6000) }),
       fetch(`${API}/tunnels`, { signal: AbortSignal.timeout(8000) }),
+      fetch(`${API}/sql`,     { signal: AbortSignal.timeout(5000) }),
     ]);
 
-    const s = sRes.status === "fulfilled" && sRes.value.ok ? await sRes.value.json() : null;
-    const a = aRes.status === "fulfilled" && aRes.value.ok ? await aRes.value.json() : null;
-    const t = tRes.status === "fulfilled" && tRes.value.ok ? await tRes.value.json() : null;
+    const s   = sRes.status === "fulfilled" && sRes.value.ok ? await sRes.value.json() : null;
+    const a   = aRes.status === "fulfilled" && aRes.value.ok ? await aRes.value.json() : null;
+    const t   = tRes.status === "fulfilled" && tRes.value.ok ? await tRes.value.json() : null;
+    const sq  = sqlRes.status === "fulfilled" && sqlRes.value.ok ? await sqlRes.value.json() : null;
 
-    if (!s && !a && !t) {
+    if (!s && !a && !t && !sq) {
       setAllDown(true);
       document.title = "⚠️ Citadel Status";
     } else {
@@ -48,6 +51,7 @@ export default function Dashboard() {
       if (s) setStats(s);
       if (a) setAmp(a);
       if (t) setTunnels(t);
+      if (sq) setSql(sq);
 
       const anyDown = a?.instances?.some((i: any) => !i.running);
       document.title = anyDown ? "⚠️ Citadel Status" : "Citadel Status";
@@ -175,6 +179,15 @@ export default function Dashboard() {
             </div>
           )) : (
             <div className="list-row"><div className="list-sub">Unavailable</div></div>
+          )}
+          {sql && (
+            <div className="list-row">
+              <div>
+                <div className="list-name">MySQL (XAMPP)</div>
+                <div className="list-sub">localhost:3306 · Global ban database</div>
+              </div>
+              <div className={`pill ${sql.mysql ? "up" : "down"}`}>{sql.mysql ? "Online" : "Down"}</div>
+            </div>
           )}
         </div>
       </div>

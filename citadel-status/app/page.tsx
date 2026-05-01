@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { UserButton } from "@clerk/nextjs";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://status-api.citadelservers.online";
@@ -19,6 +19,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [allDown, setAllDown] = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
+  const [toast, setToast] = useState("");
+
+  const copyAddress = (address: string) => {
+    navigator.clipboard.writeText(address).then(() => {
+      setToast(`Copied ${address}`);
+      setTimeout(() => setToast(""), 2000);
+    });
+  };
 
   const fetchAll = useCallback(async () => {
     const [sRes, aRes, tRes] = await Promise.allSettled([
@@ -85,6 +93,7 @@ export default function Dashboard() {
 
   return (
     <div className="app">
+      {toast && <div className="toast">{toast}</div>}
       {/* Nav */}
       <nav className="nav">
         <div className="logo">Citadel <span>Status</span></div>
@@ -180,7 +189,7 @@ export default function Dashboard() {
                     {inst.public_address && (
                       <div
                         className="amp-address"
-                        onClick={() => navigator.clipboard.writeText(inst.public_address)}
+                        onClick={() => copyAddress(inst.public_address)}
                         title="Click to copy"
                       >
                         {inst.public_address} <span className="copy-icon">⎘</span>

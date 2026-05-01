@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { UserButton } from "@clerk/nextjs";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://status-api.citadelservers.online";
 const REFRESH_MS = 10000;
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const [amp, setAmp]           = useState<any>(null);
   const [tunnels, setTunnels]   = useState<any>(null);
   const [sql, setSql]           = useState<any>(null);
+  const [history, setHistory]   = useState<any>(null);
   const [loading, setLoading]   = useState(true);
   const [allDown, setAllDown]   = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
@@ -31,19 +33,21 @@ export default function Dashboard() {
   };
 
   const fetchAll = useCallback(async () => {
-    const [sRes, aRes, tRes, sqlRes] = await Promise.allSettled([
+    const [sRes, aRes, tRes, sqlRes, hRes] = await Promise.allSettled([
       fetch(`${API}/stats`,   { signal: AbortSignal.timeout(6000) }),
       fetch(`${API}/amp`,     { signal: AbortSignal.timeout(6000) }),
       fetch(`${API}/tunnels`, { signal: AbortSignal.timeout(8000) }),
       fetch(`${API}/sql`,     { signal: AbortSignal.timeout(5000) }),
+      fetch(`${API}/history`, { signal: AbortSignal.timeout(8000) }),
     ]);
 
     const s   = sRes.status === "fulfilled" && sRes.value.ok ? await sRes.value.json() : null;
     const a   = aRes.status === "fulfilled" && aRes.value.ok ? await aRes.value.json() : null;
     const t   = tRes.status === "fulfilled" && tRes.value.ok ? await tRes.value.json() : null;
     const sq  = sqlRes.status === "fulfilled" && sqlRes.value.ok ? await sqlRes.value.json() : null;
+    const h   = hRes.status === "fulfilled" && hRes.value.ok ? await hRes.value.json() : null;
 
-    if (!s && !a && !t && !sq) {
+    if (!s && !a && !t && !sq && !h) {
       setAllDown(true);
       document.title = "⚠️ Citadel Status";
     } else {
@@ -52,6 +56,7 @@ export default function Dashboard() {
       if (a) setAmp(a);
       if (t) setTunnels(t);
       if (sq) setSql(sq);
+      if (h) setHistory(h);
 
       const anyDown = a?.instances?.some((i: any) => !i.running);
       document.title = anyDown ? "⚠️ Citadel Status" : "Citadel Status";
@@ -250,6 +255,58 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* History */}
+      {history?.system?.length > 1 && (
+        <div className="section">
+          <div className="section-title">Last 24 Hours — System</div>
+          <div className="chart-card">
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={history.system} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+                <XAxis dataKey="time" tick={{ fill: "#555", fontSize: 11 }} interval="preserveStartEnd" />
+                <YAxis tick={{ fill: "#555", fontSize: 11 }} domain={[0, 100]} />
+                <Tooltip contentStyle={{ background: "#111", border: "1px solid #1f1f1f", color: "#f0ece8", fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: "#a0a0a0" }} />
+                <Line type="monotone" dataKey="cpu" stroke="#8B2A2A" dot={false} strokeWidth={2} name="CPU %" />
+                <Line type="monotone" dataKey="mem" stroke="#4ade80" dot={false} strokeWidth={2} name="RAM %" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Player history per server */}
+      {history?.instances && Object.keys(history.instances).length > 0 && (
+        <div className="section">
+          <div className="section-title">Last 24 Hours — Players</div>
+          <div className="chart-card">
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart margin={{ top: 8, right: 8, left: -24, bottom: 0 }}
+                data={(() => {
+                  // Merge all instance timeseries into one array by time
+                  const timeMap: Record<string, any> = {};
+                  Object.entries(history.instances).forEach(([name, points]: any) => {
+                    points.forEach((p: any) => {
+                      if (!timeMap[p.time]) timeMap[p.time] = { time: p.time };
+                      timeMap[p.time][name] = p.players ?? 0;
+                    });
+                  });
+                  return Object.values(timeMap).sort((a: any, b: any) => a.time.localeCompare(b.time));
+                })()}
+              >
+                <XAxis dataKey="time" tick={{ fill: "#555", fontSize: 11 }} interval="preserveStartEnd" />
+                <YAxis tick={{ fill: "#555", fontSize: 11 }} allowDecimals={false} />
+                <Tooltip contentStyle={{ background: "#111", border: "1px solid #1f1f1f", color: "#f0ece8", fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: "#a0a0a0" }} />
+                {Object.keys(history.instances).map((name, i) => (
+                  <Line key={name} type="monotone" dataKey={name} dot={false} strokeWidth={2}
+                    stroke={["#8B2A2A","#4ade80","#fbbf24","#60a5fa","#a78bfa"][i % 5]} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

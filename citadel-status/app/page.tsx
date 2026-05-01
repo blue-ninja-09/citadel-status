@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { UserButton } from "@clerk/nextjs";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://status-api.citadelservers.online";
@@ -13,13 +13,14 @@ function barClass(pct: number) {
 }
 
 export default function Dashboard() {
-  const [stats, setStats]     = useState<any>(null);
-  const [amp, setAmp]         = useState<any>(null);
-  const [tunnels, setTunnels] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [allDown, setAllDown] = useState(false);
+  const [stats, setStats]       = useState<any>(null);
+  const [amp, setAmp]           = useState<any>(null);
+  const [tunnels, setTunnels]   = useState<any>(null);
+  const [loading, setLoading]   = useState(true);
+  const [allDown, setAllDown]   = useState(false);
   const [lastUpdate, setLastUpdate] = useState("");
-  const [toast, setToast] = useState("");
+  const [countdown, setCountdown]   = useState(REFRESH_MS / 1000);
+  const [toast, setToast]       = useState("");
 
   const copyAddress = (address: string) => {
     navigator.clipboard.writeText(address).then(() => {
@@ -41,22 +42,57 @@ export default function Dashboard() {
 
     if (!s && !a && !t) {
       setAllDown(true);
+      document.title = "⚠️ Citadel Status";
+      updateFavicon("down");
     } else {
       setAllDown(false);
       if (s) setStats(s);
       if (a) setAmp(a);
       if (t) setTunnels(t);
+
+      // Check if any servers are down
+      const anyDown = a?.instances?.some((i: any) => !i.running);
+      if (anyDown) {
+        document.title = "⚠️ Citadel Status";
+        updateFavicon("warn");
+      } else {
+        document.title = "✅ Citadel Status";
+        updateFavicon("ok");
+      }
     }
 
     setLastUpdate(new Date().toLocaleTimeString());
+    setCountdown(REFRESH_MS / 1000);
     setLoading(false);
   }, []);
 
+  const updateFavicon = (state: "ok" | "warn" | "down") => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 32; canvas.height = 32;
+    const ctx = canvas.getContext("2d")!;
+    ctx.font = "28px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(state === "ok" ? "✅" : "⚠️", 16, 16);
+    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement || document.createElement("link");
+    link.rel = "icon";
+    link.href = canvas.toDataURL();
+    document.head.appendChild(link);
+  };
+
   useEffect(() => {
     fetchAll();
-    const id = setInterval(fetchAll, REFRESH_MS);
-    return () => clearInterval(id);
+    const fetchId = setInterval(fetchAll, REFRESH_MS);
+    return () => clearInterval(fetchId);
   }, [fetchAll]);
+
+  // Countdown timer
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCountdown(c => c <= 1 ? REFRESH_MS / 1000 : c - 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   if (loading) {
     return (
@@ -94,6 +130,7 @@ export default function Dashboard() {
   return (
     <div className="app">
       {toast && <div className="toast">{toast}</div>}
+
       {/* Nav */}
       <nav className="nav">
         <div className="logo">Citadel <span>Status</span></div>
@@ -101,7 +138,9 @@ export default function Dashboard() {
           <div className="live-badge">
             <div className="live-dot" /> Live
           </div>
-          <div className="last-updated">{lastUpdate}</div>
+          <div className="last-updated">
+            {lastUpdate} · refresh in {countdown}s
+          </div>
           <UserButton />
         </div>
       </nav>
@@ -110,31 +149,24 @@ export default function Dashboard() {
       <div className="section">
         <div className="section-title">System</div>
         <div className="stat-grid">
-          {/* CPU */}
           <div className="stat-block">
             <div className="stat-name">CPU</div>
             <div className="stat-val">{cpu?.percent ?? "—"}<span className="stat-unit">%</span></div>
             <div className="stat-lbl">{cpu ? `${cpu.cores_physical}C · ${cpu.cores_logical}T · ${cpu.freq_mhz} MHz` : ""}</div>
             {cpu && <div className="bar"><div className={`bar-fill ${barClass(cpu.percent)}`} style={{ width: `${cpu.percent}%` }} /></div>}
           </div>
-
-          {/* RAM */}
           <div className="stat-block">
             <div className="stat-name">Memory</div>
             <div className="stat-val">{mem?.used_gb ?? "—"}<span className="stat-unit"> GB</span></div>
             <div className="stat-lbl">{mem ? `of ${mem.total_gb} GB` : ""}</div>
             {mem && <div className="bar"><div className={`bar-fill ${barClass(mem.percent)}`} style={{ width: `${mem.percent}%` }} /></div>}
           </div>
-
-          {/* Disk */}
           <div className="stat-block">
             <div className="stat-name">Disk (C:)</div>
             <div className="stat-val">{disk?.used_gb ?? "—"}<span className="stat-unit"> GB</span></div>
             <div className="stat-lbl">{disk ? `of ${disk.total_gb} GB` : ""}</div>
             {disk && <div className="bar"><div className={`bar-fill ${barClass(disk.percent)}`} style={{ width: `${disk.percent}%` }} /></div>}
           </div>
-
-          {/* GPU */}
           <div className="stat-block">
             <div className="stat-name">GPU</div>
             <div className="stat-val" style={{ fontSize: 16, paddingTop: 4 }}>{gpu?.name ?? "—"}</div>
@@ -187,11 +219,7 @@ export default function Dashboard() {
                   <div>
                     <div className="amp-name">{inst.name}</div>
                     {inst.public_address && (
-                      <div
-                        className="amp-address"
-                        onClick={() => copyAddress(inst.public_address)}
-                        title="Click to copy"
-                      >
+                      <div className="amp-address" onClick={() => copyAddress(inst.public_address)} title="Click to copy">
                         {inst.public_address} <span className="copy-icon">⎘</span>
                       </div>
                     )}

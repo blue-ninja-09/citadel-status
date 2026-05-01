@@ -43,22 +43,14 @@ export default function Dashboard() {
     if (!s && !a && !t) {
       setAllDown(true);
       document.title = "⚠️ Citadel Status";
-      updateFavicon("down");
     } else {
       setAllDown(false);
       if (s) setStats(s);
       if (a) setAmp(a);
       if (t) setTunnels(t);
 
-      // Check if any servers are down
       const anyDown = a?.instances?.some((i: any) => !i.running);
-      if (anyDown) {
-        document.title = "⚠️ Citadel Status";
-        updateFavicon("warn");
-      } else {
-        document.title = "✅ Citadel Status";
-        updateFavicon("ok");
-      }
+      document.title = anyDown ? "⚠️ Citadel Status" : "Citadel Status";
     }
 
     setLastUpdate(new Date().toLocaleTimeString());
@@ -66,19 +58,6 @@ export default function Dashboard() {
     setLoading(false);
   }, []);
 
-  const updateFavicon = (state: "ok" | "warn" | "down") => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 32; canvas.height = 32;
-    const ctx = canvas.getContext("2d")!;
-    ctx.font = "28px serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(state === "ok" ? "✅" : "⚠️", 16, 16);
-    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement || document.createElement("link");
-    link.rel = "icon";
-    link.href = canvas.toDataURL();
-    document.head.appendChild(link);
-  };
 
   useEffect(() => {
     fetchAll();

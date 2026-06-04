@@ -23,7 +23,8 @@ const NAV: NavItem[] = [
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { label: "Admin Panel", href: "/admin",         icon: "🛡️", adminOnly: true },
+  { label: "Admin Panel", href: "/admin", icon: "🛡️", adminOnly: true },
+  { label: "Owner Panel", href: "/owner", icon: "👑", adminOnly: true },
 ];
 
 interface Props {

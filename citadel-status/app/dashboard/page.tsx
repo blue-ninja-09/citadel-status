@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
-import DashboardLayout from "@/components/DashboardLayout";
-import { apiFetch, barClass, canViewDetails, timeAgo, type Role } from "@/lib/api";
+import DashboardLayout from "@/citadel-status/components/DashboardLayout";
+import { apiFetch, barClass, canViewDetails, timeAgo, type Role } from "@/citadel-status/lib/api";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const REFRESH = 10000;

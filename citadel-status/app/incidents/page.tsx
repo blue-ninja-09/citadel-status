@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
-import DashboardLayout from "@/components/DashboardLayout";
-import { apiFetch, canAdmin, formatDate, timeAgo, type Role } from "@/lib/api";
+import DashboardLayout from "@/citadel-status/components/DashboardLayout";
+import { apiFetch, canAdmin, formatDate, timeAgo, type Role } from "@/citadel-status/lib/api";
 
 export default function IncidentsPage() {
   const { user } = useUser();

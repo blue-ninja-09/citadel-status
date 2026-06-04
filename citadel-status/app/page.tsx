@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { apiFetch, categoryIcon, statusLabel, formatDate, timeAgo } from "@/lib/api";
+import { apiFetch, categoryIcon, statusLabel, formatDate, timeAgo } from "@/citadel-status/lib/api";
 
 const REFRESH = 30000;
 

@@ -2,8 +2,8 @@
 
 import { useUser } from "@clerk/nextjs";
 import { UserProfile } from "@clerk/nextjs";
-import DashboardLayout from "@/citadel-status/components/DashboardLayout";
-import { getRoleLabel, type Role } from "@/citadel-status/lib/api";
+import DashboardLayout from "@/components/DashboardLayout";
+import { getRoleLabel, type Role } from "@/lib/api";
 
 export default function AccountPage() {
   const { user } = useUser();

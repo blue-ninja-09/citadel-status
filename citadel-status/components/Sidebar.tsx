@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { type Role, getRoleLabel } from "@/citadel-status/lib/api";
+import { type Role, getRoleLabel } from "@/lib/api";
 
 interface NavItem {
   label: string;

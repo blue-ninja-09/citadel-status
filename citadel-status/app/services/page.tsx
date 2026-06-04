@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import DashboardLayout from "@/citadel-status/components/DashboardLayout";
-import { apiFetch, categoryIcon, statusLabel, timeAgo } from "@/citadel-status/lib/api";
+import DashboardLayout from "@/components/DashboardLayout";
+import { apiFetch, categoryIcon, statusLabel, timeAgo } from "@/lib/api";
 
 export default function ServicesPage() {
   const [services, setServices] = useState<any[]>([]);

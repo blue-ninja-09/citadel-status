@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import Sidebar from "./Sidebar";
-import { type Role, apiFetch } from "@/citadel-status/lib/api";
+import { type Role, apiFetch } from "@/lib/api";
 
 interface Props {
   children: React.ReactNode;

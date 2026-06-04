@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
-import DashboardLayout from "@/citadel-status/components/DashboardLayout";
-import { apiFetch, canAdmin, type Role } from "@/citadel-status/lib/api";
+import DashboardLayout from "@/components/DashboardLayout";
+import { apiFetch, canAdmin, type Role } from "@/lib/api";
 
 export default function AdminPage() {
   const { user } = useUser();

@@ -3,12 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import DashboardLayout from "@/components/DashboardLayout";
-import { apiFetch, canAdmin, type Role } from "@/lib/api";
+import { apiFetch, parseRole, canAdmin, type Role } from "@/lib/api";
 
 export default function AdminPage() {
   const { user } = useUser();
-  const role = (user?.publicMetadata?.role as Role) || "viewer";
-  const isAdmin = canAdmin(role);
+  const role = parseRole(user?.publicMetadata?.role);
+  const isAdmin = canAdmin(role) || role === "admin";
 
   const [users, setUsers]         = useState<any[]>([]);
   const [events, setEvents]       = useState<any[]>([]);

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import DashboardLayout from "@/components/DashboardLayout";
-import { apiFetch, canAdmin, formatDate, type Role } from "@/lib/api";
+import { apiFetch, parseRole, canAdmin, formatDate, type Role } from "@/lib/api";
 
 export default function ChangelogPage() {
   const { user } = useUser();

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import Sidebar from "./Sidebar";
-import { type Role, apiFetch } from "@/lib/api";
+import { type Role, parseRole, apiFetch } from "@/lib/api";
 
 interface Props {
   children: React.ReactNode;
@@ -13,17 +13,18 @@ interface Props {
 }
 
 export default function DashboardLayout({ children, title, subtitle, actions }: Props) {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const [role, setRole] = useState<Role>("viewer");
   const [activeIncidents, setActiveIncidents] = useState(0);
   const [lastUpdate, setLastUpdate] = useState("");
   const [countdown, setCountdown] = useState(10);
 
   useEffect(() => {
-    // Get role from Clerk public metadata
-    const r = (user?.publicMetadata?.role as Role) || "viewer";
-    setRole(r);
-  }, [user]);
+    if (!isLoaded) return;
+    // Only set role once user is fully loaded — never default to owner
+    const raw = user?.publicMetadata?.role;
+    setRole(parseRole(raw));
+  }, [user, isLoaded]);
 
   useEffect(() => {
     apiFetch("/incidents")
@@ -37,7 +38,6 @@ export default function DashboardLayout({ children, title, subtitle, actions }: 
     setLastUpdate(new Date().toLocaleTimeString());
   }, []);
 
-  // Countdown
   useEffect(() => {
     const id = setInterval(() => {
       setCountdown((c) => {

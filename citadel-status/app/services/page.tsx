@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { apiFetch, categoryIcon, statusLabel, timeAgo } from "@/lib/api";
+import { apiFetch, parseRole, categoryIcon, statusLabel, timeAgo } from "@/lib/api";
 
 export default function ServicesPage() {
   const [services, setServices] = useState<any[]>([]);

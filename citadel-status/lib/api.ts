@@ -9,22 +9,48 @@ export async function apiFetch(path: string, opts?: RequestInit) {
   return res.json();
 }
 
-// Role hierarchy
-export type Role = "owner" | "co_owner" | "has_server" | "viewer" | "public";
+// Role hierarchy — "viewer" is the safe default, never "owner"
+export type Role = "owner" | "co_owner" | "admin" | "has_server" | "viewer" | "public";
+
+const VALID_ROLES: Role[] = ["owner", "co_owner", "admin", "has_server", "viewer", "public"];
+
+export function parseRole(raw: unknown): Role {
+  if (typeof raw === "string" && VALID_ROLES.includes(raw as Role)) {
+    return raw as Role;
+  }
+  return "viewer"; // safe default — never assume owner
+}
 
 export function getRoleLabel(role: Role): string {
   const labels: Record<Role, string> = {
-    owner: "Owner",
-    co_owner: "Co-Owner",
+    owner:      "Owner",
+    co_owner:   "Co-Owner",
+    admin:      "Admin",
     has_server: "Server Owner",
-    viewer: "Viewer",
-    public: "Public",
+    viewer:     "Viewer",
+    public:     "Public",
   };
   return labels[role] || "Viewer";
 }
 
+export function getRoleColor(role: Role): string {
+  const colors: Record<Role, string> = {
+    owner:      "var(--red)",
+    co_owner:   "var(--yellow)",
+    admin:      "var(--accent-light)",
+    has_server: "var(--blue)",
+    viewer:     "var(--green)",
+    public:     "var(--text-dim)",
+  };
+  return colors[role] || "var(--text-dim)";
+}
+
 export function canAdmin(role: Role) {
-  return role === "owner" || role === "co_owner";
+  return role === "owner" || role === "co_owner" || role === "admin";
+}
+
+export function isOwner(role: Role) {
+  return role === "owner";
 }
 
 export function canViewDetails(role: Role) {
@@ -60,15 +86,6 @@ export function categoryIcon(category: string): string {
     case "infrastructure": return "🗄️";
     case "bot":            return "🤖";
     default:               return "⚙️";
-  }
-}
-
-export function severityColor(severity: string): string {
-  switch (severity) {
-    case "critical": return "var(--red)";
-    case "major":    return "var(--yellow)";
-    case "minor":    return "var(--blue)";
-    default:         return "var(--text-dim)";
   }
 }
 

@@ -3,29 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { type Role, getRoleLabel } from "@/lib/api";
+import { type Role, parseRole, getRoleLabel, getRoleColor } from "@/lib/api";
 
 interface NavItem {
   label: string;
   href: string;
   icon: string;
   badge?: number;
-  adminOnly?: boolean;
+  minRole?: Role;
 }
 
 const NAV: NavItem[] = [
-  { label: "Overview",    href: "/dashboard",     icon: "📊" },
-  { label: "Services",    href: "/services",      icon: "⚙️" },
-  { label: "Incidents",   href: "/incidents",     icon: "🚨" },
-  { label: "Maintenance", href: "/maintenance",   icon: "🔧" },
-  { label: "Changelog",   href: "/changelog",     icon: "📋" },
-  { label: "Account",     href: "/account",       icon: "👤" },
+  { label: "Overview",    href: "/dashboard",   icon: "📊" },
+  { label: "Services",    href: "/services",    icon: "⚙️" },
+  { label: "Incidents",   href: "/incidents",   icon: "🚨" },
+  { label: "Maintenance", href: "/maintenance", icon: "🔧" },
+  { label: "Changelog",   href: "/changelog",   icon: "📋" },
+  { label: "Account",     href: "/account",     icon: "👤" },
 ];
 
-const ADMIN_NAV: NavItem[] = [
-  { label: "Admin Panel", href: "/admin", icon: "🛡️", adminOnly: true },
-  { label: "Owner Panel", href: "/owner", icon: "👑", adminOnly: true },
+const STAFF_NAV: NavItem[] = [
+  { label: "Admin Panel", href: "/admin", icon: "🛡️", minRole: "admin" },
+  { label: "Owner Panel", href: "/owner", icon: "👑", minRole: "owner" },
 ];
+
+const ROLE_ORDER: Role[] = ["public", "viewer", "has_server", "admin", "co_owner", "owner"];
+
+function meetsMinRole(userRole: Role, minRole: Role): boolean {
+  return ROLE_ORDER.indexOf(userRole) >= ROLE_ORDER.indexOf(minRole);
+}
 
 interface Props {
   role: Role;
@@ -34,9 +40,15 @@ interface Props {
 
 export default function Sidebar({ role, activeIncidents = 0 }: Props) {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
 
-  const isAdmin = role === "owner" || role === "co_owner";
+  // Re-derive role from user metadata to ensure it's always accurate
+  const safeRole = isLoaded ? parseRole(user?.publicMetadata?.role) : "viewer";
+  const displayRole = safeRole;
+
+  const staffItems = STAFF_NAV.filter(item =>
+    item.minRole ? meetsMinRole(displayRole, item.minRole) : true
+  );
 
   return (
     <aside className="sidebar">
@@ -63,10 +75,10 @@ export default function Sidebar({ role, activeIncidents = 0 }: Props) {
           ))}
         </div>
 
-        {isAdmin && (
+        {staffItems.length > 0 && (
           <div className="nav-section" style={{ marginTop: 8 }}>
-            <div className="nav-section-label">Admin</div>
-            {ADMIN_NAV.map((item) => (
+            <div className="nav-section-label">Staff</div>
+            {staffItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -87,7 +99,13 @@ export default function Sidebar({ role, activeIncidents = 0 }: Props) {
             <div style={{ fontSize: 12, color: "var(--text-bright)", fontWeight: 500 }}>
               {user?.firstName || user?.username || "User"}
             </div>
-            <div style={{ fontSize: 11, color: "var(--text-dim)" }}>{getRoleLabel(role)}</div>
+            <div style={{
+              fontSize: 11,
+              color: getRoleColor(displayRole),
+              fontWeight: 600,
+            }}>
+              {getRoleLabel(displayRole)}
+            </div>
           </div>
         </div>
         <Link href="/" style={{ fontSize: 11, color: "var(--text-dim)", textDecoration: "none" }}>

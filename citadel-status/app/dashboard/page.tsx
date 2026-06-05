@@ -3,14 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import DashboardLayout from "@/components/DashboardLayout";
-import { apiFetch, barClass, canViewDetails, timeAgo, type Role } from "@/lib/api";
+import { apiFetch, parseRole, barClass, canViewDetails, timeAgo, type Role } from "@/lib/api";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const REFRESH = 10000;
 
 export default function DashboardPage() {
   const { user } = useUser();
-  const role = (user?.publicMetadata?.role as Role) || "viewer";
+  const role = parseRole(user?.publicMetadata?.role);
 
   const [stats, setStats]     = useState<any>(null);
   const [amp, setAmp]         = useState<any>(null);

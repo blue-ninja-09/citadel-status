@@ -8,7 +8,7 @@ import { apiFetch, parseRole, canAdmin, type Role } from "@/lib/api";
 export default function AdminPage() {
   const { user } = useUser();
   const role = parseRole(user?.publicMetadata?.role);
-  const isAdmin = canAdmin(role) || role === "admin";
+  const isAdmin = canAdmin(role);
 
   const [users, setUsers]         = useState<any[]>([]);
   const [events, setEvents]       = useState<any[]>([]);

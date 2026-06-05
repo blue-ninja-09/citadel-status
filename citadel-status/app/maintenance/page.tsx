@@ -8,7 +8,7 @@ import { apiFetch, parseRole, canAdmin, formatDate, timeAgo, type Role } from "@
 export default function MaintenancePage() {
   const { user } = useUser();
   const role = parseRole(user?.publicMetadata?.role);
-  const isAdmin = canAdmin(role) || role === "admin";
+  const isAdmin = canAdmin(role);
 
   const [maintenance, setMaintenance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
